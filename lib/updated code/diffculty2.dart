@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:msn_project/quiz_page.dart';
 
 class DifficultySelectionPage extends StatelessWidget {
   const DifficultySelectionPage({super.key});

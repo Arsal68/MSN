@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class QuizPage extends StatefulWidget {
   final String subject;
   final String difficulty;
-  final Future<void> Function() onQuizCompleted; // ✅ UPDATED
+  final Future<void> Function(int score) onQuizCompleted; // pass score
 
   const QuizPage({
     super.key,
@@ -25,25 +26,42 @@ class _QuizPageState extends State<QuizPage>
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
 
-  final List<String> questionDocs = ["question 1", "question 2", "question 3"];
+  final List<String> questionDocs = [
+    "question 1",
+    "question 2",
+    "question 3",
+    "question 4",
+  ];
   List<Map<String, dynamic>> questions = [];
   bool isLoading = true;
 
-  // Timer variables
-  int timeLeft = 10;
+  int timeLeft = 60;
   Timer? _timer;
 
-  // ✅ Map UI subject names to Firestore subject names
+  // Track correct answers
+  int correctAnswers = 0;
+
   String _mapSubjectName(String subject) {
-    if (subject == "App Development") return "app dev";
-    if (subject == "Web Development") return "web dev";
-    if (subject == "Dot Net Development") return "dot net";
-    if (subject == "Data Analyst") return "data analysis";
-    if (subject == "Digital Marketing") return "digital marketing";
-    if (subject == "Python Programming") return "python programming";
-    if (subject == "Gen AI") return "gen ai";
-    if (subject == "Graphic Designing") return "graphic designing";
-    return subject.toLowerCase();
+    switch (subject) {
+      case "App Development":
+        return "app dev";
+      case "Web Development":
+        return "web dev";
+      case "Dot Net Development":
+        return "dot net";
+      case "Data Analyst":
+        return "data analysis";
+      case "Digital Marketing":
+        return "digital marketing";
+      case "Python Programming":
+        return "python programming";
+      case "Gen AI":
+        return "gen ai";
+      case "Graphic Designing":
+        return "graphic designing";
+      default:
+        return subject.toLowerCase();
+    }
   }
 
   @override
@@ -82,6 +100,7 @@ class _QuizPageState extends State<QuizPage>
           fetchedQuestions.add({
             "mcq": snapshot.get('mcq'),
             "options": snapshot.get('options'),
+            "correctOpt": snapshot.get('correct opt'), // correct option
           });
         }
       }
@@ -100,7 +119,7 @@ class _QuizPageState extends State<QuizPage>
 
   void _startTimer() {
     _timer?.cancel();
-    timeLeft = 60; // 60 seconds per question
+    timeLeft = 60;
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (timeLeft > 0) {
         setState(() {
@@ -114,6 +133,12 @@ class _QuizPageState extends State<QuizPage>
   }
 
   Future<void> _goToNextQuestion() async {
+    // Check if current answer is correct
+    if (selectedOption != null &&
+        selectedOption == questions[currentQuestionIndex]["correctOpt"]) {
+      correctAnswers++;
+    }
+
     if (currentQuestionIndex < questionDocs.length - 1) {
       setState(() {
         currentQuestionIndex++;
@@ -124,17 +149,21 @@ class _QuizPageState extends State<QuizPage>
     } else {
       _timer?.cancel();
 
+      int score = ((correctAnswers / questionDocs.length) * 100).round();
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("🎉 Quiz Completed!", style: TextStyle(fontSize: 16)),
+        SnackBar(
+          content: Text(
+            "🎉 Quiz Completed! Score: $score%",
+            style: const TextStyle(fontSize: 16),
+          ),
           backgroundColor: Colors.green,
         ),
       );
 
-      // ✅ Wait until Firestore is updated before returning
-      await widget.onQuizCompleted();
+      // Save score & update Firestore
+      await widget.onQuizCompleted(score);
 
-      // ✅ Go back to Difficulty Page
       Navigator.pop(context);
     }
   }
@@ -219,7 +248,6 @@ class _QuizPageState extends State<QuizPage>
                   ),
                 ],
               ),
-
               const SizedBox(height: 20),
 
               // Progress Bar
@@ -232,7 +260,6 @@ class _QuizPageState extends State<QuizPage>
                 minHeight: 8,
                 borderRadius: BorderRadius.circular(10),
               ),
-
               const SizedBox(height: 20),
 
               // Question Text
@@ -246,7 +273,6 @@ class _QuizPageState extends State<QuizPage>
                   height: 1.4,
                 ),
               ),
-
               const SizedBox(height: 25),
 
               // Options

@@ -54,7 +54,6 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage> {
         isLoading = false;
       });
     } else {
-      // If no data, create default structure
       difficultyStatus = {
         "beginner": {"unlocked": true, "completed": false},
         "intermediate": {"unlocked": false, "completed": false},
@@ -73,8 +72,8 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage> {
     }
   }
 
-  /// Mark difficulty as completed and unlock next one
-  Future<void> completeDifficulty(String difficulty) async {
+  /// Update difficulty completion after quiz
+  Future<void> completeDifficulty(String difficulty, int score) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -83,38 +82,36 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage> {
         .doc(user.uid);
     final snapshot = await userDocRef.get();
 
-    double overallProgress = 0.0;
+    double overallProgress =
+        snapshot.exists && snapshot.data()!.containsKey("overall_progress")
+        ? snapshot["overall_progress"] ?? 0.0
+        : 0.0;
 
-    // Get the current stored progress if exists
-    if (snapshot.exists && snapshot.data()!.containsKey("overall_progress")) {
-      overallProgress = snapshot["overall_progress"] ?? 0.0;
-    }
+    final currentIndex = difficulties.indexOf(difficulty);
+    final nextIndex = currentIndex + 1;
 
-    final nextIndex = difficulties.indexOf(difficulty) + 1;
+    // Mark current difficulty as completed only if score >= 75%
+    if (score >= 75) {
+      difficultyStatus[difficulty] = {"unlocked": true, "completed": true};
 
-    // Check if this difficulty was already completed
-    bool wasAlreadyCompleted =
-        difficultyStatus[difficulty]?["completed"] ?? false;
+      // Unlock next difficulty if exists
+      if (nextIndex < difficulties.length) {
+        final nextDifficulty = difficulties[nextIndex];
+        difficultyStatus[nextDifficulty] = {
+          "unlocked": true,
+          "completed": difficultyStatus[nextDifficulty]?["completed"] ?? false,
+        };
+      }
 
-    // Mark current difficulty as completed
-    difficultyStatus[difficulty] = {"unlocked": true, "completed": true};
-
-    // Unlock next difficulty if exists
-    if (nextIndex < difficulties.length) {
-      final nextDifficulty = difficulties[nextIndex];
-      difficultyStatus[nextDifficulty] = {
-        "unlocked": true,
-        "completed": difficultyStatus[nextDifficulty]?["completed"] ?? false,
-      };
-    }
-
-    // ✅ Increment overall progress only if this is the first time completing
-    if (!wasAlreadyCompleted) {
-      overallProgress += 100 / 32; // ~3.125% per level
+      // Increment overall progress only once per level
+      overallProgress += 100 / 32; // ~3.125%
       if (overallProgress > 100) overallProgress = 100;
+    } else {
+      // If score < 75%, allow retry but do not unlock next level
+      difficultyStatus[difficulty] = {"unlocked": true, "completed": false};
     }
 
-    // ✅ Update Firestore with difficulty progress + overall progress
+    // Update Firestore
     await userDocRef.set({
       widget.subject.toLowerCase(): difficultyStatus,
       "overall_progress": overallProgress,
@@ -123,7 +120,7 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage> {
     setState(() {});
   }
 
-  /// Start quiz and mark completion after quiz ends
+  /// Start quiz and handle completion
   void startQuiz(String difficulty) {
     Navigator.push(
       context,
@@ -131,14 +128,13 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage> {
         builder: (_) => QuizPage(
           subject: widget.subject,
           difficulty: difficulty,
-          onQuizCompleted: () async {
-            await completeDifficulty(difficulty);
+          onQuizCompleted: (score) async {
+            await completeDifficulty(difficulty, score);
           },
         ),
       ),
     ).then((_) {
-      // Refresh status when returning from quiz
-      fetchDifficultyStatus();
+      fetchDifficultyStatus(); // refresh after returning
     });
   }
 
@@ -163,6 +159,8 @@ class _DifficultySelectionPageState extends State<DifficultySelectionPage> {
             color: Colors.white,
           ),
         ),
+        iconTheme: IconThemeData(color: Colors.white),
+
         centerTitle: true,
         backgroundColor: const Color(0xFF1D1F45),
       ),

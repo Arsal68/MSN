@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:msn_project/landing_page.dart';
 import 'package:provider/provider.dart';
 import 'provider/subject_provider.dart';
-import 'package:msn_project/login_page.dart';
+import 'package:msn_project/landing_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:msn_project/firebase_options.dart';
-import 'package:msn_project/updated%20code/signup_page2.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

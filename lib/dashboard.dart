@@ -270,13 +270,39 @@ class _DashboardState extends State<Dashboard> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              "Welcome Arsal!",
-                              style: TextStyle(
-                                fontSize: 26,
-                                color: Colors.white,
-                                fontFamily: "Mclaren",
-                              ),
+                            // ✅ Fetch user's name from Firestore (collection 'user', field 'name')
+                            StreamBuilder<DocumentSnapshot>(
+                              stream: FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(user?.uid)
+                                  .snapshots(),
+                              builder: (context, nameSnapshot) {
+                                if (!nameSnapshot.hasData ||
+                                    nameSnapshot.data == null) {
+                                  return const Text(
+                                    "Welcome...",
+                                    style: TextStyle(
+                                      fontSize: 26,
+                                      color: Colors.white,
+                                      fontFamily: "Mclaren",
+                                    ),
+                                  );
+                                }
+                                final nameData =
+                                    nameSnapshot.data!.data()
+                                        as Map<String, dynamic>? ??
+                                    {};
+                                final displayName =
+                                    nameData['username'] ?? 'User';
+                                return Text(
+                                  "Welcome $displayName",
+                                  style: const TextStyle(
+                                    fontSize: 26,
+                                    color: Colors.white,
+                                    fontFamily: "Mclaren",
+                                  ),
+                                );
+                              },
                             ),
                             GestureDetector(
                               onTap: _showIconPicker,
@@ -314,7 +340,7 @@ class _DashboardState extends State<Dashboard> {
                         ),
                         const SizedBox(height: 15),
 
-                        // 🔹 Subject Progress Bar (Real-time)
+                        // 🔹 Subject Progress Bar
                         buildProgressBar(
                           value: subjectProgress,
                           label: "Subject Progress",
@@ -323,7 +349,7 @@ class _DashboardState extends State<Dashboard> {
                           percentageColor: Colors.white,
                         ),
 
-                        // 🔹 Overall Progress Bar (Real-time)
+                        // 🔹 Overall Progress Bar
                         buildProgressBar(
                           value: overallProgress,
                           label: "Overall Progress",
@@ -339,7 +365,9 @@ class _DashboardState extends State<Dashboard> {
 
                 DashboardCards(
                   title: "Let's Get Started",
-                  subtitle: "Difficulty: Easy  Level: 10",
+                  subtitle: subjectProvider.selectedSubject.isEmpty
+                      ? "Select a subject to begin"
+                      : "Put your ${subjectProvider.selectedSubject} knowledge to the test!",
                   icon: Icons.play_arrow_rounded,
                   color: const Color(0xffFF4B5C),
                   onTap: () {
@@ -385,7 +413,7 @@ class _DashboardState extends State<Dashboard> {
                   color: const Color(0xffFBC02D),
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => Achievements()),
+                    MaterialPageRoute(builder: (context) => AchievementsPage()),
                   ),
                 ),
 

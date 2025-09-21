@@ -1,7 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:msn_project/provider/subject_provider.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+
+// Subject class to represent each subject
+class Subject {
+  final String name;
+  final IconData icon;
+  final Color color1;
+  final Color color2;
+
+  Subject({
+    required this.name,
+    required this.icon,
+    required this.color1,
+    required this.color2,
+  });
+}
 
 class Subjects extends StatefulWidget {
   const Subjects({super.key});
@@ -12,16 +29,102 @@ class Subjects extends StatefulWidget {
 
 class _SubjectsState extends State<Subjects> {
   String selectedSubject = '';
+  Map<String, bool> completedSubjects = {};
+
+  @override
+  void initState() {
+    super.initState();
+    fetchCompletedSubjects();
+  }
+
+  void fetchCompletedSubjects() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final snapshot = await FirebaseFirestore.instance
+        .collection('user_progress')
+        .doc(user.uid)
+        .get();
+
+    if (snapshot.exists) {
+      final data = snapshot.data()!;
+      Map<String, bool> tempCompleted = {};
+      data.forEach((subject, value) {
+        if (value is Map<String, dynamic>) {
+          int total = value.length;
+          int completedCount = 0;
+          value.forEach((key, val) {
+            if (val['completed'] == true) completedCount++;
+          });
+          double percent = (completedCount / total) * 100;
+          tempCompleted[subject.toLowerCase()] = percent == 100;
+        }
+      });
+
+      setState(() {
+        completedSubjects = tempCompleted;
+      });
+    }
+  }
+
+  // List of subjects
+  final List<Subject> subjects = [
+    Subject(
+      name: "App Development",
+      icon: Icons.smartphone,
+      color1: Color(0xffEB0000),
+      color2: Color(0xffFFD93D),
+    ),
+    Subject(
+      name: "Data Analyst",
+      icon: Icons.analytics,
+      color1: Color(0xff36D1DC),
+      color2: Color(0xff5B86E5),
+    ),
+    Subject(
+      name: "Web Development",
+      icon: MdiIcons.web,
+      color1: Color(0xffA4FF5F),
+      color2: Color(0xff004D15),
+    ),
+    Subject(
+      name: "Gen AI",
+      icon: MdiIcons.robot,
+      color1: Color(0xff6A11CB),
+      color2: Color(0xff2575FC),
+    ),
+    Subject(
+      name: "Dot Net Development",
+      icon: MdiIcons.codeTags,
+      color1: Color(0xffF7971E),
+      color2: Color(0xffFFD200),
+    ),
+    Subject(
+      name: "Graphic Designing",
+      icon: Icons.color_lens,
+      color1: Color(0xffFF512F),
+      color2: Color(0xffDD2476),
+    ),
+    Subject(
+      name: "Digital Marketing",
+      icon: Icons.campaign,
+      color1: Color(0xff11998E),
+      color2: Color(0xff38EF7D),
+    ),
+    Subject(
+      name: "Python Programming",
+      icon: MdiIcons.languagePython,
+      color1: Color(0xffF7971E),
+      color2: Color(0xffFFD200),
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 245, 245, 245),
+      backgroundColor: Color(0xffF5F5F5),
       appBar: AppBar(
-        elevation: 8,
-        backgroundColor: const Color(0xff1D1F45),
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
+        title: Text(
           "Subjects",
           style: TextStyle(
             fontFamily: "Mclaren",
@@ -29,76 +132,108 @@ class _SubjectsState extends State<Subjects> {
             color: Colors.white,
           ),
         ),
+        backgroundColor: Color(0xff1D1F45),
         centerTitle: true,
+        iconTheme: IconThemeData(color: Colors.white),
       ),
       body: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
           children: [
             Expanded(
-              child: GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                children: [
-                  subjectCard(
-                    subjname: "App Development",
-                    icon: Icons.smartphone,
-                    color1: const Color.fromARGB(255, 235, 0, 0),
-                    color2: const Color(0xffFFD93D),
-                  ),
-                  subjectCard(
-                    subjname: "Data Analyst",
-                    icon: Icons.analytics,
-                    color1: const Color(0xff36D1DC),
-                    color2: const Color(0xff5B86E5),
-                  ),
-                  subjectCard(
-                    subjname: "Web Development",
-                    icon: MdiIcons.web,
-                    color1: const Color.fromARGB(255, 164, 255, 95),
-                    color2: const Color.fromARGB(255, 0, 77, 21),
-                  ),
-                  subjectCard(
-                    subjname: "Gen AI",
-                    icon: MdiIcons.robot,
-                    color1: const Color(0xff6A11CB),
-                    color2: const Color(0xff2575FC),
-                  ),
-                  subjectCard(
-                    subjname: "Dot Net Development",
-                    icon: MdiIcons.codeTags,
-                    color1: const Color(0xffF7971E),
-                    color2: const Color(0xffFFD200),
-                  ),
-                  subjectCard(
-                    subjname: "Graphic Designing",
-                    icon: Icons.color_lens,
-                    color1: const Color(0xffFF512F),
-                    color2: const Color(0xffDD2476),
-                  ),
-                  subjectCard(
-                    subjname: "Digital Marketing",
-                    icon: Icons.campaign,
-                    color1: const Color(0xff11998E),
-                    color2: const Color(0xff38EF7D),
-                  ),
-                  subjectCard(
-                    subjname: "Python Programming",
-                    icon: MdiIcons.languagePython,
-                    color1: const Color(0xffF7971E),
-                    color2: const Color(0xffFFD200),
-                  ),
-                ],
+              child: GridView.builder(
+                itemCount: subjects.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 1, // ensures perfect squares
+                ),
+                itemBuilder: (context, index) {
+                  final subj = subjects[index];
+                  bool isSelected = selectedSubject == subj.name;
+                  bool isCompleted =
+                      completedSubjects[subj.name.toLowerCase()] ?? false;
+
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        selectedSubject = subj.name;
+                      });
+                    },
+                    child: AnimatedContainer(
+                      duration: Duration(milliseconds: 300),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: isSelected
+                              ? [subj.color1, subj.color2]
+                              : [Color(0xff1D1F45), Color(0xff1D1F45)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected ? Colors.white : Colors.white24,
+                          width: isSelected ? 3.5 : 1.5,
+                        ),
+                      ),
+                      child: Stack(
+                        children: [
+                          Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  subj.icon,
+                                  size: 55,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : subj.color1,
+                                ),
+                                SizedBox(height: 10),
+                                Text(
+                                  subj.name,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontFamily: "Mclaren",
+                                    fontWeight: FontWeight.w600,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : Colors.white70,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (isCompleted)
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.green,
+                                ),
+                                padding: EdgeInsets.all(4),
+                                child: Icon(
+                                  Icons.check,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 80,
-                  vertical: 16,
-                ),
+                padding: EdgeInsets.symmetric(horizontal: 80, vertical: 16),
                 backgroundColor: selectedSubject.isEmpty
                     ? Colors.grey.shade600
                     : Colors.teal,
@@ -107,24 +242,16 @@ class _SubjectsState extends State<Subjects> {
                 ),
                 elevation: 8,
               ),
-              onPressed: () {
-                if (selectedSubject.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('⚠ Please select a subject'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                } else {
-                  Provider.of<SubjectProvider>(
-                    context,
-                    listen: false,
-                  ).setSubject(selectedSubject);
-
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text(
+              onPressed: selectedSubject.isEmpty
+                  ? null
+                  : () {
+                      Provider.of<SubjectProvider>(
+                        context,
+                        listen: false,
+                      ).setSubject(selectedSubject);
+                      Navigator.pop(context);
+                    },
+              child: Text(
                 "Next",
                 style: TextStyle(
                   fontSize: 18,
@@ -133,68 +260,7 @@ class _SubjectsState extends State<Subjects> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget subjectCard({
-    required String subjname,
-    required IconData icon,
-    required Color color1,
-    required Color color2,
-  }) {
-    final bool isSelected = selectedSubject == subjname;
-
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedSubject = subjname;
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isSelected
-                ? [color1, color2]
-                : [const Color(0xff1D1F45), const Color(0xff1D1F45)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            if (isSelected)
-              BoxShadow(
-                color: color1.withOpacity(0.4),
-                blurRadius: 15,
-                spreadRadius: 2,
-                offset: const Offset(0, 5),
-              ),
-          ],
-          border: Border.all(
-            color: isSelected ? Colors.white : Colors.white24,
-            width: isSelected ? 3.5 : 1.5,
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 55, color: isSelected ? Colors.white : color1),
-            const SizedBox(height: 10),
-            Text(
-              subjname,
-              style: TextStyle(
-                fontSize: 16,
-                fontFamily: "Mclaren",
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : Colors.white70,
-              ),
-              textAlign: TextAlign.center,
-            ),
+            SizedBox(height: 16),
           ],
         ),
       ),

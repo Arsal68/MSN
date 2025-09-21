@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:msn_project/login_page.dart';
 import 'package:msn_project/signup_page.dart';
 import 'package:msn_project/profile_page.dart';
 
@@ -59,7 +60,7 @@ class LandingPage extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const ProfilePage(),
+                            builder: (context) => const LoginPage(),
                           ),
                         );
                       },
