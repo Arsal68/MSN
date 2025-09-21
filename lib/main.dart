@@ -1,0 +1,32 @@
+import 'package:flutter/material.dart';
+import 'package:msn_project/landing_page.dart';
+import 'package:provider/provider.dart';
+import 'provider/subject_provider.dart';
+import 'package:msn_project/login_page.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:msn_project/firebase_options.dart';
+import 'package:msn_project/updated%20code/signup_page2.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  runApp(
+    MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => SubjectProvider())],
+      child: const MyApp(),
+    ),
+  );
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'MSN',
+      debugShowCheckedModeBanner: false,
+      home: LandingPage(),
+    );
+  }
+}

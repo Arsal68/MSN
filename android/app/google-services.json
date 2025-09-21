@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "608843044150",
+    "project_id": "msn-project-2e280",
+    "storage_bucket": "msn-project-2e280.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:608843044150:android:d6c9f4fa7cfe2ece764f97",
+        "android_client_info": {
+          "package_name": "com.example.msn_project"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCQ5sWnj5iIdjkP1mh_DPUDY-tOQ-xL9Ds"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
